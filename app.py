@@ -13,6 +13,7 @@ choice = st.radio(
 )
 
 if choice == "LAST YEAR VIEW":
-    st.info("Qui vedrai cosa è stato promosso lo scorso anno (placeholder)")
+    st.info("Qui vedrai cosa è stato promozionato lo scorso anno (placeholder)")
 else:
     st.success("Qui inserirai una nuova promo (step successivo)")
+

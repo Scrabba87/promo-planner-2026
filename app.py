@@ -12,7 +12,7 @@ choice = st.radio(
     horizontal=True
 )
 
-if choice == "LAST YEAR VIEW":
+if choice == "PIANO PROMO 2025":
     st.info("Qui vedrai cosa è stato promozionato lo scorso anno (placeholder)")
 else:
     import streamlit as st
@@ -108,5 +108,6 @@ for i, p in enumerate(selected, start=1):
             st.stop()
 
 st.success("Schermata inserimento promo OK ✅ (prossimo step: salvataggio + export Excel)")
+
 
 

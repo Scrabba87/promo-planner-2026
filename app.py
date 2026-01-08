@@ -1,61 +1,77 @@
 import hmac
 import streamlit as st
+from datetime import date, timedelta
+from collections import Counter
 
+# =========================
+# PAGE CONFIG
+# =========================
+st.set_page_config(page_title="Promo Planner 2026", layout="wide")
+
+
+# =========================
+# AUTH (LOGIN GATE)
+# =========================
 def require_login():
-    if "auth" not in st.session_state:
-        st.session_state.auth = False
+    if "auth_ok" not in st.session_state:
+        st.session_state.auth_ok = False
 
-    if st.session_state.auth:
+    if st.session_state.auth_ok:
         return
 
     st.title("Accesso riservato")
+    st.caption("Inserisci account e password per continuare.")
 
-    u = st.text_input("Account")
-    p = st.text_input("Password", type="password")
+    user = st.text_input("Account")
+    pwd = st.text_input("Password", type="password")
 
     if st.button("Entra", type="primary"):
-        ok_user = u == st.secrets.get("APP_USER", "")
-        ok_pass = hmac.compare_digest(p, st.secrets.get("APP_PASS", ""))
+        ok_user = user == st.secrets.get("APP_USER", "")
+        ok_pass = hmac.compare_digest(pwd, st.secrets.get("APP_PASS", ""))
+
         if ok_user and ok_pass:
-            st.session_state.auth = True
+            st.session_state.auth_ok = True
             st.rerun()
         else:
             st.error("Credenziali non valide")
 
     st.stop()
 
+
 require_login()
 
-st.set_page_config(page_title="Promo Planner 2026", layout="wide")
-st.sidebar.image("assets/royal.png", use_container_width=True)
-st.sidebar.divider()
 
+# =========================
+# CONFIG (hardcoded per ora)
+# =========================
+CLIENTE_DEFAULT = "Esselunga"
 
-CLIENTE_DEFAULT = "ESSELUNGA"
+LOGO_PATH = "assets/royal.png"  # assicurati che esista in repo
 
 ATTIVITA_LIST = [
-  "TAGLIO PREZZO + EXTRA DISPLAY",
-  "COLLECTION",
-  "VOL + EXTRA DISPLAY",
-  "TAGLIO PREZZO",
-  "VOLANTINO",
+    "TAGLIO PREZZO + EXTRA DISPLAY",
+    "COLLECTION",
+    "VOL + EXTRA DISPLAY",
+    "TAGLIO PREZZO",
+    "VOLANTINO",
 ]
 
 CANALI = ["IPER", "SUPER", "SUPERETTE"]
 
 # Prodotti demo (finché non carichiamo la lista vera)
 PRODOTTI_DEMO = {
-  "SOFT DRINKS": [
-    {"SAP COD": "SAP001", "CODICE SAP": "CSAP001", "FORMATO 1": "33cl"},
-    {"SAP COD": "SAP002", "CODICE SAP": "CSAP002", "FORMATO 1": "1L"},
-  ],
-  "BIRRA": [
-    {"SAP COD": "SAP101", "CODICE SAP": "CSAP101", "FORMATO 1": "66cl"},
-  ],
-  "ENERGY": [
-    {"SAP COD": "SAP201", "CODICE SAP": "CSAP201", "FORMATO 1": "25cl"},
-  ],
+    "SOFT DRINKS": [
+        {"SAP COD": "SAP001", "CODICE SAP": "CSAP001", "FORMATO 1": "33cl"},
+        {"SAP COD": "SAP002", "CODICE SAP": "CSAP002", "FORMATO 1": "1L"},
+    ],
+    "BIRRA": [
+        {"SAP COD": "SAP101", "CODICE SAP": "CSAP101", "FORMATO 1": "66cl"},
+    ],
+    "ENERGY": [
+        {"SAP COD": "SAP201", "CODICE SAP": "CSAP201", "FORMATO 1": "25cl"},
+    ],
 }
+
 
 def month_by_max_days(d1: date, d2: date) -> int:
     c = Counter()
@@ -65,11 +81,14 @@ def month_by_max_days(d1: date, d2: date) -> int:
         cur += timedelta(days=1)
     best = max(
         c.items(),
-        key=lambda kv: (kv[1], 1 if kv[0] == (d1.year, d1.month) else 0)
+        key=lambda kv: (kv[1], 1 if kv[0] == (d1.year, d1.month) else 0),
     )[0]
     return best[1]
 
-# ======= ROUTING =======
+
+# =========================
+# ROUTING
+# =========================
 PAGES = {
     "HOME CLIENTE": "home",
     "PIANO PROMO 2025": "piano_2025",
@@ -81,12 +100,17 @@ PAGES = {
 if "page" not in st.session_state:
     st.session_state.page = PAGES["HOME CLIENTE"]
 
-# ======= SIDEBAR (pannello di controllo) =======
-st.sidebar.title("Pannello di controllo")
-st.sidebar.caption(f"Cliente: {CLIENTE_DEFAULT}  (per ora fisso)")
 
-label_by_key = {v: k for k, v in PAGES.items()}
-current_label = label_by_key[st.session_state.page]
+# =========================
+# SIDEBAR (logo + nav + logout)
+# =========================
+try:
+    st.sidebar.image(LOGO_PATH, use_container_width=True)
+except Exception:
+    st.sidebar.warning("Logo non trovato: controlla assets/royal.png")
+
+st.sidebar.divider()
+st.sidebar.caption(f"Cliente: {CLIENTE_DEFAULT} (per ora fisso)")
 
 st.sidebar.markdown("### Navigazione")
 
@@ -110,16 +134,24 @@ if st.sidebar.button("✅ Promo Definitive", use_container_width=True):
     st.session_state.page = PAGES["CONSULTAZIONE PROMO DEF"]
     st.rerun()
 
-
 st.sidebar.divider()
-st.sidebar.info("Login AAM e scelta cliente: li aggiungiamo nel prossimo step.")
 
-# ======= HEADER =======
+if st.sidebar.button("🚪 Logout", use_container_width=True):
+    st.session_state.auth_ok = False
+    st.rerun()
+
+
+# =========================
+# HEADER
+# =========================
 st.title(f"Promo Planner 2026 — {CLIENTE_DEFAULT}")
 
 page = st.session_state.page
 
-# ======= HOME CLIENTE (DEFAULT) =======
+
+# =========================
+# HOME CLIENTE
+# =========================
 if page == "home":
     st.subheader("Seleziona ambiente di lavoro")
 
@@ -143,7 +175,10 @@ if page == "home":
     st.info("Login AAM e scelta cliente verranno aggiunti successivamente.")
     st.stop()
 
-# ======= PAGINE =======
+
+# =========================
+# PAGES
+# =========================
 if page == "piano_2025":
     st.subheader("Piano Promo 2025")
     st.info("Placeholder: qui mostreremo la Last Year View (per categoria e quando).")
@@ -157,12 +192,11 @@ elif page == "def":
     st.info("Placeholder: qui vedremo le promo definitive / approvate (da DB).")
 
 elif page == "ins_promo":
-    # ======= INSERIMENTO PROMO (come già piace a te) =======
     st.subheader("Inserimento Promo")
 
     st.markdown("### 1) Sell-Out (definisce il mese)")
     so_start = st.date_input("SELL OUT data inizio", value=date(2026, 1, 1))
-    so_end   = st.date_input("SELL OUT data fine", value=date(2026, 1, 7))
+    so_end = st.date_input("SELL OUT data fine", value=date(2026, 1, 7))
 
     if so_end < so_start:
         st.error("Errore: SELL OUT data fine < data inizio")
@@ -194,9 +228,20 @@ elif page == "ins_promo":
         with st.expander(f"Prodotto {i}: {label}", expanded=True):
             c1, c2 = st.columns(2)
             c1.selectbox("ATTIVITA'", ATTIVITA_LIST, key=f"att_{i}")
-            clusters = c2.multiselect("Dove attivi la promo (cluster)", CANALI, default=CANALI, key=f"cl_{i}")
+            clusters = c2.multiselect(
+                "Dove attivi la promo (cluster)",
+                CANALI,
+                default=CANALI,
+                key=f"cl_{i}",
+            )
 
-            st.number_input("SCONTO POSIZIONAMENTO (manuale)", min_value=0.0, value=0.0, step=0.1, key=f"sp_{i}")
+            st.number_input(
+                "SCONTO POSIZIONAMENTO (manuale)",
+                min_value=0.0,
+                value=0.0,
+                step=0.1,
+                key=f"sp_{i}",
+            )
 
             st.caption("Opzionali (fillabili manualmente)")
             o1, o2, o3, o4 = st.columns(4)
@@ -213,14 +258,4 @@ elif page == "ins_promo":
                 st.error("Seleziona almeno un cluster per questo prodotto.")
                 st.stop()
 
-    if st.button("Torna alla Home Cliente"):
-        st.session_state.page = PAGES["HOME CLIENTE"]
-        st.rerun()
-
     st.success("Inserimento promo OK ✅ (prossimo step: salvataggio + export Excel)")
-
-
-
-
-
-

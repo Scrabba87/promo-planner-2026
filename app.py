@@ -1,6 +1,30 @@
+import hmac
 import streamlit as st
-from datetime import date, timedelta
-from collections import Counter
+
+def require_login():
+    if "auth" not in st.session_state:
+        st.session_state.auth = False
+
+    if st.session_state.auth:
+        return
+
+    st.title("Accesso riservato")
+
+    u = st.text_input("Account")
+    p = st.text_input("Password", type="password")
+
+    if st.button("Entra", type="primary"):
+        ok_user = u == st.secrets.get("APP_USER", "")
+        ok_pass = hmac.compare_digest(p, st.secrets.get("APP_PASS", ""))
+        if ok_user and ok_pass:
+            st.session_state.auth = True
+            st.rerun()
+        else:
+            st.error("Credenziali non valide")
+
+    st.stop()
+
+require_login()
 
 st.set_page_config(page_title="Promo Planner 2026", layout="wide")
 st.sidebar.image("assets/royal.png", use_container_width=True)
@@ -194,6 +218,7 @@ elif page == "ins_promo":
         st.rerun()
 
     st.success("Inserimento promo OK ✅ (prossimo step: salvataggio + export Excel)")
+
 
 
 

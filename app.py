@@ -8,7 +8,7 @@ st.subheader("Cliente: Esselunga")
 st.markdown("### Seleziona cosa vuoi fare")
 choice = st.radio(
     "Scegli una sezione",
-    ["LAST YEAR VIEW", "INSERIMENTO PROMO"],
+    ["PIANO PROMO 2025", "INSERIMENTO PROMO"],
     horizontal=True
 )
 
@@ -108,6 +108,7 @@ for i, p in enumerate(selected, start=1):
             st.stop()
 
 st.success("Schermata inserimento promo OK ✅ (prossimo step: salvataggio + export Excel)")
+
 
 
 

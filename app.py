@@ -61,12 +61,28 @@ st.sidebar.caption(f"Cliente: {CLIENTE_DEFAULT}  (per ora fisso)")
 label_by_key = {v: k for k, v in PAGES.items()}
 current_label = label_by_key[st.session_state.page]
 
-choice = st.sidebar.radio(
-    "Vai a…",
-    list(PAGES.keys()),
-    index=list(PAGES.keys()).index(current_label)
-)
-st.session_state.page = PAGES[choice]
+st.sidebar.markdown("### Navigazione")
+
+if st.sidebar.button("🏠 Home Cliente", use_container_width=True):
+    st.session_state.page = PAGES["HOME CLIENTE"]
+    st.rerun()
+
+if st.sidebar.button("📅 Piano Promo 2025", use_container_width=True):
+    st.session_state.page = PAGES["PIANO PROMO 2025"]
+    st.rerun()
+
+if st.sidebar.button("✍️ Inserimento Promo", use_container_width=True):
+    st.session_state.page = PAGES["INSERIMENTO PROMO"]
+    st.rerun()
+
+if st.sidebar.button("📝 Promo in Bozza", use_container_width=True):
+    st.session_state.page = PAGES["CONSULTAZIONE PROMO IN BOZZA"]
+    st.rerun()
+
+if st.sidebar.button("✅ Promo Definitive", use_container_width=True):
+    st.session_state.page = PAGES["CONSULTAZIONE PROMO DEF"]
+    st.rerun()
+
 
 st.sidebar.divider()
 st.sidebar.info("Login AAM e scelta cliente: li aggiungiamo nel prossimo step.")
@@ -175,3 +191,4 @@ elif page == "ins_promo":
         st.rerun()
 
     st.success("Inserimento promo OK ✅ (prossimo step: salvataggio + export Excel)")
+

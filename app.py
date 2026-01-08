@@ -7,7 +7,7 @@ st.sidebar.image("assets/royal.png", use_container_width=True)
 st.sidebar.divider()
 
 
-CLIENTE_DEFAULT = "Esselunga"
+CLIENTE_DEFAULT = "ESSELUNGA"
 
 ATTIVITA_LIST = [
   "TAGLIO PREZZO + EXTRA DISPLAY",
@@ -194,6 +194,7 @@ elif page == "ins_promo":
         st.rerun()
 
     st.success("Inserimento promo OK ✅ (prossimo step: salvataggio + export Excel)")
+
 
 
 

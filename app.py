@@ -2,16 +2,6 @@ import streamlit as st
 from datetime import date, timedelta
 from collections import Counter
 
-st.markdown("""
-<style>
-.stButton > button {
-  border-radius: 10px;
-  border: 1px solid #144D3B;
-}
-</style>
-""", unsafe_allow_html=True)
-
-
 st.set_page_config(page_title="Promo Planner 2026", layout="wide")
 st.sidebar.image("assets/royal.png", use_container_width=True)
 st.sidebar.divider()
@@ -204,6 +194,7 @@ elif page == "ins_promo":
         st.rerun()
 
     st.success("Inserimento promo OK ✅ (prossimo step: salvataggio + export Excel)")
+
 
 
 

@@ -1,23 +1,10 @@
 import streamlit as st
+from datetime import date, timedelta
+from collections import Counter
 
 st.set_page_config(page_title="Promo Planner 2026", layout="wide")
 
-st.title("Promo Planner 2026")
-st.subheader("Cliente: Esselunga")
-
-st.markdown("### Seleziona cosa vuoi fare")
-choice = st.radio(
-    "Scegli una sezione",
-    ["PIANO PROMO 2025", "INSERIMENTO PROMO"],
-    horizontal=True
-)
-
-if choice == "PIANO PROMO 2025":
-    st.info("Qui vedrai cosa è stato promozionato lo scorso anno (placeholder)")
-else:
-    import streamlit as st
-from datetime import date, timedelta
-from collections import Counter
+CLIENTE_DEFAULT = "Esselunga"
 
 ATTIVITA_LIST = [
   "TAGLIO PREZZO + EXTRA DISPLAY",
@@ -27,6 +14,9 @@ ATTIVITA_LIST = [
   "VOLANTINO",
 ]
 
+CANALI = ["IPER", "SUPER", "SUPERETTE"]
+
+# Prodotti demo (finché non carichiamo la lista vera)
 PRODOTTI_DEMO = {
   "SOFT DRINKS": [
     {"SAP COD": "SAP001", "CODICE SAP": "CSAP001", "FORMATO 1": "33cl"},
@@ -40,75 +30,148 @@ PRODOTTI_DEMO = {
   ],
 }
 
-CANALI = ["IPER", "SUPER", "SUPERETTE"]
-
 def month_by_max_days(d1: date, d2: date) -> int:
     c = Counter()
     cur = d1
     while cur <= d2:
         c[(cur.year, cur.month)] += 1
         cur += timedelta(days=1)
-    best = max(c.items(), key=lambda kv: (kv[1], 1 if kv[0]==(d1.year,d1.month) else 0))[0]
+    best = max(
+        c.items(),
+        key=lambda kv: (kv[1], 1 if kv[0] == (d1.year, d1.month) else 0)
+    )[0]
     return best[1]
 
-st.markdown("## Inserimento Promo")
+# ======= ROUTING =======
+PAGES = {
+    "HOME CLIENTE": "home",
+    "PIANO PROMO 2025": "piano_2025",
+    "INSERIMENTO PROMO": "ins_promo",
+    "CONSULTAZIONE PROMO IN BOZZA": "bozze",
+    "CONSULTAZIONE PROMO DEF": "def",
+}
 
-st.markdown("### 1) Sell-Out (definisce il mese)")
-so_start = st.date_input("SELL OUT data inizio", value=date(2026,1,1))
-so_end   = st.date_input("SELL OUT data fine", value=date(2026,1,7))
+if "page" not in st.session_state:
+    st.session_state.page = PAGES["HOME CLIENTE"]
 
-if so_end < so_start:
-    st.error("Errore: SELL OUT data fine < data inizio")
+# ======= SIDEBAR (pannello di controllo) =======
+st.sidebar.title("Pannello di controllo")
+st.sidebar.caption(f"Cliente: {CLIENTE_DEFAULT}  (per ora fisso)")
+
+label_by_key = {v: k for k, v in PAGES.items()}
+current_label = label_by_key[st.session_state.page]
+
+choice = st.sidebar.radio(
+    "Vai a…",
+    list(PAGES.keys()),
+    index=list(PAGES.keys()).index(current_label)
+)
+st.session_state.page = PAGES[choice]
+
+st.sidebar.divider()
+st.sidebar.info("Login AAM e scelta cliente: li aggiungiamo nel prossimo step.")
+
+# ======= HEADER =======
+st.title(f"Promo Planner 2026 — {CLIENTE_DEFAULT}")
+
+page = st.session_state.page
+
+# ======= HOME CLIENTE (DEFAULT) =======
+if page == "home":
+    st.subheader("Seleziona ambiente di lavoro")
+
+    c1, c2 = st.columns(2)
+    with c1:
+        if st.button("1) Piano Promo 2025", use_container_width=True):
+            st.session_state.page = PAGES["PIANO PROMO 2025"]
+            st.rerun()
+        if st.button("3) Consultazione promo in bozza", use_container_width=True):
+            st.session_state.page = PAGES["CONSULTAZIONE PROMO IN BOZZA"]
+            st.rerun()
+
+    with c2:
+        if st.button("2) Inserimento promo", type="primary", use_container_width=True):
+            st.session_state.page = PAGES["INSERIMENTO PROMO"]
+            st.rerun()
+        if st.button("4) Consultazione promo definitive", use_container_width=True):
+            st.session_state.page = PAGES["CONSULTAZIONE PROMO DEF"]
+            st.rerun()
+
+    st.info("Login AAM e scelta cliente verranno aggiunti successivamente.")
     st.stop()
 
-mese_so = month_by_max_days(so_start, so_end)
-st.success(f"Mese Sell-Out calcolato: **{mese_so}**")
+# ======= PAGINE =======
+if page == "piano_2025":
+    st.subheader("Piano Promo 2025")
+    st.info("Placeholder: qui mostreremo la Last Year View (per categoria e quando).")
 
-st.markdown("### 2) Categoria")
-categoria = st.selectbox("Seleziona categoria", list(PRODOTTI_DEMO.keys()))
+elif page == "bozze":
+    st.subheader("Consultazione Promo in bozza")
+    st.info("Placeholder: qui vedremo le promo salvate in bozza (da DB).")
 
-st.markdown("### 3) Prodotti della categoria (tick)")
-prodotti = PRODOTTI_DEMO[categoria]
+elif page == "def":
+    st.subheader("Consultazione Promo definitive")
+    st.info("Placeholder: qui vedremo le promo definitive / approvate (da DB).")
 
-selected = []
-for p in prodotti:
-    label = f'{p["SAP COD"]} | {p["CODICE SAP"]} | {p["FORMATO 1"]}'
-    if st.checkbox(label, key=label):
-        selected.append(p)
+elif page == "ins_promo":
+    # ======= INSERIMENTO PROMO (come già piace a te) =======
+    st.subheader("Inserimento Promo")
 
-if not selected:
-    st.warning("Seleziona almeno un prodotto.")
-    st.stop()
+    st.markdown("### 1) Sell-Out (definisce il mese)")
+    so_start = st.date_input("SELL OUT data inizio", value=date(2026, 1, 1))
+    so_end   = st.date_input("SELL OUT data fine", value=date(2026, 1, 7))
 
-st.divider()
-st.markdown("### 4) Dettagli promo per prodotto")
+    if so_end < so_start:
+        st.error("Errore: SELL OUT data fine < data inizio")
+        st.stop()
 
-for i, p in enumerate(selected, start=1):
-    label = f'{p["SAP COD"]} | {p["CODICE SAP"]} | {p["FORMATO 1"]}'
-    with st.expander(f"Prodotto {i}: {label}", expanded=True):
-        c1, c2 = st.columns(2)
-        att = c1.selectbox("ATTIVITA'", ATTIVITA_LIST, key=f"att_{i}")
-        clusters = c2.multiselect("Dove attivi la promo (cluster)", CANALI, default=CANALI, key=f"cl_{i}")
+    mese_so = month_by_max_days(so_start, so_end)
+    st.success(f"Mese Sell-Out calcolato: **{mese_so}**")
 
-        sconto_pos = st.number_input("SCONTO POSIZIONAMENTO (manuale)", min_value=0.0, value=0.0, step=0.1, key=f"sp_{i}")
+    st.markdown("### 2) Categoria")
+    categoria = st.selectbox("Seleziona categoria", list(PRODOTTI_DEMO.keys()))
 
-        st.caption("Opzionali (fillabili manualmente)")
-        o1, o2, o3, o4 = st.columns(4)
-        o1.number_input("SCONTO A", min_value=0.0, value=0.0, step=0.1, key=f"sa_{i}")
-        o2.number_input("SCONTO B", min_value=0.0, value=0.0, step=0.1, key=f"sb_{i}")
-        o3.number_input("SC. IN FATT. %", min_value=0.0, value=0.0, step=0.1, key=f"sif_{i}")
-        o4.number_input("SCONTO NC %", min_value=0.0, value=0.0, step=0.1, key=f"snc_{i}")
+    st.markdown("### 3) Prodotti della categoria (tick)")
+    prodotti = PRODOTTI_DEMO[categoria]
+    selected = []
+    for p in prodotti:
+        label = f'{p["SAP COD"]} | {p["CODICE SAP"]} | {p["FORMATO 1"]}'
+        if st.checkbox(label, key=f"prod_{label}"):
+            selected.append(p)
 
-        st.markdown("**SELL IN (selezionabile)**")
-        si_start = st.date_input("SELL IN data inizio", value=None, key=f"si_s_{i}")
-        si_end   = st.date_input("SELL IN data fine", value=None, key=f"si_e_{i}")
+    if not selected:
+        st.warning("Seleziona almeno un prodotto.")
+        st.stop()
 
-        if not clusters:
-            st.error("Seleziona almeno un cluster per questo prodotto.")
-            st.stop()
+    st.divider()
+    st.markdown("### 4) Dettagli promo per prodotto")
 
-st.success("Schermata inserimento promo OK ✅ (prossimo step: salvataggio + export Excel)")
+    for i, p in enumerate(selected, start=1):
+        label = f'{p["SAP COD"]} | {p["CODICE SAP"]} | {p["FORMATO 1"]}'
+        with st.expander(f"Prodotto {i}: {label}", expanded=True):
+            c1, c2 = st.columns(2)
+            c1.selectbox("ATTIVITA'", ATTIVITA_LIST, key=f"att_{i}")
+            clusters = c2.multiselect("Dove attivi la promo (cluster)", CANALI, default=CANALI, key=f"cl_{i}")
 
+            st.number_input("SCONTO POSIZIONAMENTO (manuale)", min_value=0.0, value=0.0, step=0.1, key=f"sp_{i}")
 
+            st.caption("Opzionali (fillabili manualmente)")
+            o1, o2, o3, o4 = st.columns(4)
+            o1.number_input("SCONTO A", min_value=0.0, value=0.0, step=0.1, key=f"sa_{i}")
+            o2.number_input("SCONTO B", min_value=0.0, value=0.0, step=0.1, key=f"sb_{i}")
+            o3.number_input("SC. IN FATT. %", min_value=0.0, value=0.0, step=0.1, key=f"sif_{i}")
+            o4.number_input("SCONTO NC %", min_value=0.0, value=0.0, step=0.1, key=f"snc_{i}")
 
+            st.markdown("**SELL IN (selezionabile)**")
+            st.date_input("SELL IN data inizio", value=None, key=f"si_s_{i}")
+            st.date_input("SELL IN data fine", value=None, key=f"si_e_{i}")
 
+            if not clusters:
+                st.error("Seleziona almeno un cluster per questo prodotto.")
+                st.stop()
+
+    if st.button("Torna alla Home Cliente"):
+        st.session_state.page = PAGES["HOME CLIENTE"]
+        st.rerun()
+
+    st.success("Inserimento promo OK ✅ (prossimo step: salvataggio + export Excel)")

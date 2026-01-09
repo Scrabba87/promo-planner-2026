@@ -229,7 +229,7 @@ if page == "admin":
                 if up.name.lower().endswith(".csv"):
                     df = pd.read_csv(up)
                 else:
-                    df = pd.read_excel(up, sheet_name=0)
+                    df = pd.read_excel(up, sheet_name=0, engine="openpyxl")
             except Exception as e:
                 st.error(f"Errore lettura file: {e}")
                 st.stop()
@@ -421,3 +421,4 @@ elif page == "ins_promo":
                 st.stop()
 
     st.success("Inserimento promo OK ✅ (prossimo step: salvataggio + export Excel)")
+

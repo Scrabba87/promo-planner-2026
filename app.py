@@ -222,6 +222,13 @@ if page == "admin":
         st.subheader("Upload Files")
         st.caption("Per ora: carica Piano Promo 2025 (alimenta la view AAM).")
 
+        import importlib.util
+import streamlit as st
+
+st.caption("Diagnostica dipendenze")
+has_openpyxl = importlib.util.find_spec("openpyxl") is not None
+st.write("openpyxl installato:", has_openpyxl)
+
         import pandas as pd
         up = st.file_uploader("Carica Piano Promo 2025 (Excel o CSV)", type=["xlsx", "xls", "csv"])
         if up is not None:
@@ -421,4 +428,5 @@ elif page == "ins_promo":
                 st.stop()
 
     st.success("Inserimento promo OK ✅ (prossimo step: salvataggio + export Excel)")
+
 

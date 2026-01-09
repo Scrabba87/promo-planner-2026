@@ -20,6 +20,7 @@ ATTIVITA_LIST = [
 ]
 CANALI = ["IPER", "SUPER", "SUPERETTE"]
 
+# Prodotti demo (finché non carichiamo la lista vera)
 PRODOTTI_DEMO = {
     "SOFT DRINKS": [
         {"SAP COD": "SAP001", "CODICE SAP": "CSAP001", "FORMATO 1": "33cl"},
@@ -32,6 +33,7 @@ PRODOTTI_DEMO = {
         {"SAP COD": "SAP201", "CODICE SAP": "CSAP201", "FORMATO 1": "25cl"},
     ],
 }
+
 
 def month_by_max_days(d1: date, d2: date) -> int:
     c = Counter()
@@ -93,6 +95,7 @@ def require_login():
 
     st.stop()
 
+
 require_login()
 
 
@@ -121,9 +124,11 @@ PAGES = {
 if "page" not in st.session_state:
     st.session_state.page = PAGES["HOME CLIENTE"]
 
+
 def goto(page_key: str):
     st.session_state.page = page_key
     st.rerun()
+
 
 def goto_admin(admin_key: str):
     st.session_state.page = "admin"
@@ -227,16 +232,47 @@ if page == "admin":
         st.write("openpyxl installato:", has_openpyxl)
 
         import pandas as pd
+        import io
+
+        def read_csv_super_robusto(uploaded_file):
+            raw = uploaded_file.getvalue()
+
+            encodings_to_try = [
+                "utf-8",
+                "utf-8-sig",
+                "latin1",
+                "iso-8859-1",
+                "cp1252",
+            ]
+            seps_to_try = [";", ",", "\t", "|"]
+
+            last_error = None
+            for enc in encodings_to_try:
+                for sep in seps_to_try:
+                    try:
+                        text = raw.decode(enc)
+                        df_try = pd.read_csv(
+                            io.StringIO(text),
+                            sep=sep,
+                            engine="python",
+                            dtype=str,
+                            on_bad_lines="skip",  # pur di caricare e vedere i dati
+                        )
+                        if df_try.shape[1] > 1:
+                            return df_try, enc, sep
+                    except Exception as e:
+                        last_error = e
+
+            raise ValueError(f"Impossibile leggere il CSV. Ultimo errore: {last_error}")
 
         up = st.file_uploader("Carica Piano Promo 2025 (Excel o CSV)", type=["xlsx", "xls", "csv"])
 
         if up is not None:
             try:
                 if up.name.lower().endswith(".csv"):
-                    # auto-separatore (virgola/;), più robusto
-                    df = pd.read_csv(up, sep=None, engine="python")
+                    df, enc, sep = read_csv_super_robusto(up)
+                    st.info(f"CSV letto con encoding='{enc}' e separatore='{sep}'")
                 else:
-                    # engine esplicito
                     df = pd.read_excel(up, sheet_name=0, engine="openpyxl")
 
                 df.columns = [str(c).strip() for c in df.columns]
@@ -245,7 +281,7 @@ if page == "admin":
 
             except Exception as e:
                 st.error(f"Errore lettura file: {e}")
-                st.info("Workaround: salva lo stesso file in CSV e ricaricalo (non richiede openpyxl).")
+                st.info("Tip: se è CSV, prova a riesportare da Excel come CSV UTF-8 (meglio) e riprova.")
 
         if st.session_state.piano2025_df is not None:
             with st.expander("Preview (prime 20 righe)"):

@@ -74,8 +74,7 @@ def require_login():
             user == st.secrets.get("ADMIN_USER", "")
             and hmac.compare_digest(pwd, st.secrets.get("ADMIN_PASS", ""))
         )
-
-        if is_admin:
+  if is_admin:
     st.session_state.auth_ok = True
     st.session_state.role = "admin"
     st.session_state.page = "admin"
@@ -434,4 +433,5 @@ elif page == "ins_promo":
                 st.stop()
 
     st.success("Inserimento promo OK ✅ (prossimo step: salvataggio + export Excel)")
+
 

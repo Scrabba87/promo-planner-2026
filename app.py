@@ -20,7 +20,6 @@ ATTIVITA_LIST = [
 ]
 CANALI = ["IPER", "SUPER", "SUPERETTE"]
 
-# Prodotti demo (finché non carichiamo la lista vera)
 PRODOTTI_DEMO = {
     "SOFT DRINKS": [
         {"SAP COD": "SAP001", "CODICE SAP": "CSAP001", "FORMATO 1": "33cl"},
@@ -222,28 +221,31 @@ if page == "admin":
         st.subheader("Upload Files")
         st.caption("Per ora: carica Piano Promo 2025 (alimenta la view AAM).")
 
+        # --- DIAGNOSTICA dipendenze ---
         import importlib.util
-import streamlit as st
-
-st.caption("Diagnostica dipendenze")
-has_openpyxl = importlib.util.find_spec("openpyxl") is not None
-st.write("openpyxl installato:", has_openpyxl)
+        has_openpyxl = importlib.util.find_spec("openpyxl") is not None
+        st.write("openpyxl installato:", has_openpyxl)
 
         import pandas as pd
+
         up = st.file_uploader("Carica Piano Promo 2025 (Excel o CSV)", type=["xlsx", "xls", "csv"])
+
         if up is not None:
             try:
                 if up.name.lower().endswith(".csv"):
-                    df = pd.read_csv(up)
+                    # auto-separatore (virgola/;), più robusto
+                    df = pd.read_csv(up, sep=None, engine="python")
                 else:
+                    # engine esplicito
                     df = pd.read_excel(up, sheet_name=0, engine="openpyxl")
+
+                df.columns = [str(c).strip() for c in df.columns]
+                st.session_state.piano2025_df = df
+                st.success(f"Piano Promo 2025 caricato ✅ Righe: {len(df):,} | Colonne: {len(df.columns)}")
+
             except Exception as e:
                 st.error(f"Errore lettura file: {e}")
-                st.stop()
-
-            df.columns = [str(c).strip() for c in df.columns]
-            st.session_state.piano2025_df = df
-            st.success(f"Piano Promo 2025 caricato ✅ Righe: {len(df):,} | Colonne: {len(df.columns)}")
+                st.info("Workaround: salva lo stesso file in CSV e ricaricalo (non richiede openpyxl).")
 
         if st.session_state.piano2025_df is not None:
             with st.expander("Preview (prime 20 righe)"):
@@ -428,5 +430,3 @@ elif page == "ins_promo":
                 st.stop()
 
     st.success("Inserimento promo OK ✅ (prossimo step: salvataggio + export Excel)")
-
-

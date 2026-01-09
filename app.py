@@ -155,7 +155,9 @@ st.sidebar.divider()
 
 if st.sidebar.button("🚪 Logout", use_container_width=True):
     st.session_state.auth_ok = False
+    st.session_state.role = "aam"
     st.rerun()
+
 
 
 # =========================
@@ -276,6 +278,7 @@ elif page == "ins_promo":
                 st.stop()
 
     st.success("Inserimento promo OK ✅ (prossimo step: salvataggio + export Excel)")
+
 
 
 

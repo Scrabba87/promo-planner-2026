@@ -13,6 +13,9 @@ st.set_page_config(page_title="Promo Planner 2026", layout="wide")
 # AUTH (LOGIN GATE)
 # =========================
 def require_login():
+    if "role" not in st.session_state:
+    st.session_state.role = "aam"
+
     if "auth_ok" not in st.session_state:
         st.session_state.auth_ok = False
 
@@ -25,17 +28,30 @@ def require_login():
     user = st.text_input("Account")
     pwd = st.text_input("Password", type="password")
 
-    if st.button("Entra", type="primary"):
-        ok_user = user == st.secrets.get("APP_USER", "")
-        ok_pass = hmac.compare_digest(pwd, st.secrets.get("APP_PASS", ""))
+        if st.button("Entra", type="primary"):
+        is_aam = (
+            user == st.secrets.get("APP_USER", "")
+            and hmac.compare_digest(pwd, st.secrets.get("APP_PASS", ""))
+        )
 
-        if ok_user and ok_pass:
+        is_admin = (
+            user == st.secrets.get("ADMIN_USER", "")
+            and hmac.compare_digest(pwd, st.secrets.get("ADMIN_PASS", ""))
+        )
+
+        if is_admin:
             st.session_state.auth_ok = True
+            st.session_state.role = "admin"
+            st.rerun()
+        elif is_aam:
+            st.session_state.auth_ok = True
+            st.session_state.role = "aam"
             st.rerun()
         else:
             st.error("Credenziali non valide")
 
     st.stop()
+
 
 
 require_login()
@@ -259,3 +275,4 @@ elif page == "ins_promo":
                 st.stop()
 
     st.success("Inserimento promo OK ✅ (prossimo step: salvataggio + export Excel)")
+

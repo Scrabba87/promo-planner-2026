@@ -13,9 +13,13 @@ st.set_page_config(page_title="Promo Planner 2026", layout="wide")
 # AUTH (LOGIN GATE)
 # =========================
 def require_login():
-       if "auth_ok" not in st.session_state:
+    # init session
+    if "auth_ok" not in st.session_state:
         st.session_state.auth_ok = False
+    if "role" not in st.session_state:
+        st.session_state.role = "aam"  # default
 
+    # already logged in
     if st.session_state.auth_ok:
         return
 
@@ -25,7 +29,7 @@ def require_login():
     user = st.text_input("Account")
     pwd = st.text_input("Password", type="password")
 
-        if st.button("Entra", type="primary"):
+    if st.button("Entra", type="primary"):
         is_aam = (
             user == st.secrets.get("APP_USER", "")
             and hmac.compare_digest(pwd, st.secrets.get("APP_PASS", ""))
@@ -50,8 +54,8 @@ def require_login():
     st.stop()
 
 
-
 require_login()
+
 
 
 # =========================
@@ -272,5 +276,6 @@ elif page == "ins_promo":
                 st.stop()
 
     st.success("Inserimento promo OK ✅ (prossimo step: salvataggio + export Excel)")
+
 
 

@@ -153,6 +153,11 @@ if st.sidebar.button("✅ Promo Definitive", use_container_width=True):
 
 st.sidebar.divider()
 
+if st.session_state.get("role") == "admin":
+    if st.sidebar.button("🛠️ Admin", use_container_width=True):
+        st.session_state.page = "admin"
+        st.rerun()
+
 if st.sidebar.button("🚪 Logout", use_container_width=True):
     st.session_state.auth_ok = False
     st.session_state.role = "aam"
@@ -278,6 +283,7 @@ elif page == "ins_promo":
                 st.stop()
 
     st.success("Inserimento promo OK ✅ (prossimo step: salvataggio + export Excel)")
+
 
 
 

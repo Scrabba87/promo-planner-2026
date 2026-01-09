@@ -13,10 +13,7 @@ st.set_page_config(page_title="Promo Planner 2026", layout="wide")
 # AUTH (LOGIN GATE)
 # =========================
 def require_login():
-    if "role" not in st.session_state:
-    st.session_state.role = "aam"
-
-    if "auth_ok" not in st.session_state:
+       if "auth_ok" not in st.session_state:
         st.session_state.auth_ok = False
 
     if st.session_state.auth_ok:
@@ -275,4 +272,5 @@ elif page == "ins_promo":
                 st.stop()
 
     st.success("Inserimento promo OK ✅ (prossimo step: salvataggio + export Excel)")
+
 

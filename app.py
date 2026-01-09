@@ -76,13 +76,19 @@ def require_login():
         )
 
         if is_admin:
-            st.session_state.auth_ok = True
-            st.session_state.role = "admin"
-            st.rerun()
-        elif is_aam:
-            st.session_state.auth_ok = True
-            st.session_state.role = "aam"
-            st.rerun()
+    st.session_state.auth_ok = True
+    st.session_state.role = "admin"
+    st.session_state.page = "admin"
+    st.session_state.admin_page = "admin_home"
+    st.rerun()
+
+elif is_aam:
+    st.session_state.auth_ok = True
+    st.session_state.role = "aam"
+    st.session_state.page = "home"
+    st.session_state.admin_page = "admin_home"  # non serve agli AAM, ma ok
+    st.rerun()
+
         else:
             st.error("Credenziali non valide")
 
@@ -428,3 +434,4 @@ elif page == "ins_promo":
                 st.stop()
 
     st.success("Inserimento promo OK ✅ (prossimo step: salvataggio + export Excel)")
+

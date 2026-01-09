@@ -33,6 +33,7 @@ PRODOTTI_DEMO = {
     ],
 }
 
+
 def month_by_max_days(d1: date, d2: date) -> int:
     c = Counter()
     cur = d1
@@ -53,7 +54,7 @@ def require_login():
     if "auth_ok" not in st.session_state:
         st.session_state.auth_ok = False
     if "role" not in st.session_state:
-        st.session_state.role = "aam"
+        st.session_state.role = "aam"  # default
 
     if st.session_state.auth_ok:
         return
@@ -87,11 +88,22 @@ def require_login():
 
     st.stop()
 
+
 require_login()
+
+# =========================
+# SESSION STORAGE (per ora in memoria)
+# =========================
+if "piano2025_df" not in st.session_state:
+    st.session_state.piano2025_df = None
+
+# stato navigazione admin
+if "admin_page" not in st.session_state:
+    st.session_state.admin_page = "admin_home"  # admin_home, admin_upload, admin_piani, admin_wd
 
 
 # =========================
-# ROUTING
+# ROUTING (AAM)
 # =========================
 PAGES = {
     "HOME CLIENTE": "home",
@@ -105,9 +117,16 @@ PAGES = {
 if "page" not in st.session_state:
     st.session_state.page = PAGES["HOME CLIENTE"]
 
-# storage dati (per ora in session)
-if "piano2025_df" not in st.session_state:
-    st.session_state.piano2025_df = None
+
+def goto(page_key: str):
+    st.session_state.page = page_key
+    st.rerun()
+
+
+def goto_admin(admin_key: str):
+    st.session_state.page = PAGES["ADMIN"]
+    st.session_state.admin_page = admin_key
+    st.rerun()
 
 
 # =========================
@@ -121,50 +140,131 @@ except Exception:
 st.sidebar.caption(f"Cliente: {CLIENTE_DEFAULT}")
 
 st.sidebar.divider()
-st.sidebar.markdown("### Navigazione")
 
-def goto(page_key: str):
-    st.session_state.page = page_key
-    st.rerun()
-
-if st.sidebar.button("🏠 Home Cliente", use_container_width=True):
-    goto(PAGES["HOME CLIENTE"])
-
-if st.sidebar.button("📅 Piano Promo 2025", use_container_width=True):
-    goto(PAGES["PIANO PROMO 2025"])
-
-if st.sidebar.button("✍️ Inserimento Promo", use_container_width=True):
-    goto(PAGES["INSERIMENTO PROMO"])
-
-if st.sidebar.button("📝 Promo in Bozza", use_container_width=True):
-    goto(PAGES["CONSULTAZIONE PROMO IN BOZZA"])
-
-if st.sidebar.button("✅ Promo Definitive", use_container_width=True):
-    goto(PAGES["CONSULTAZIONE PROMO DEF"])
-
-# Admin button only for admin
+# Sidebar diversa per ruolo
 if st.session_state.get("role") == "admin":
-    st.sidebar.divider()
-    if st.sidebar.button("🛠️ Admin", use_container_width=True):
-        goto(PAGES["ADMIN"])
+    st.sidebar.markdown("### Admin — Ambienti")
+
+    if st.sidebar.button("🏠 Admin Home", use_container_width=True):
+        goto_admin("admin_home")
+
+    if st.sidebar.button("⬆️ Upload Files", use_container_width=True):
+        goto_admin("admin_upload")
+
+    if st.sidebar.button("📚 Consultazione Piani Promo", use_container_width=True):
+        goto_admin("admin_piani")
+
+    if st.sidebar.button("🧾 WD Promo Review", use_container_width=True):
+        goto_admin("admin_wd")
+
+else:
+    st.sidebar.markdown("### Navigazione")
+
+    if st.sidebar.button("🏠 Home Cliente", use_container_width=True):
+        goto(PAGES["HOME CLIENTE"])
+
+    if st.sidebar.button("📅 Piano Promo 2025", use_container_width=True):
+        goto(PAGES["PIANO PROMO 2025"])
+
+    if st.sidebar.button("✍️ Inserimento Promo", use_container_width=True):
+        goto(PAGES["INSERIMENTO PROMO"])
+
+    if st.sidebar.button("📝 Promo in Bozza", use_container_width=True):
+        goto(PAGES["CONSULTAZIONE PROMO IN BOZZA"])
+
+    if st.sidebar.button("✅ Promo Definitive", use_container_width=True):
+        goto(PAGES["CONSULTAZIONE PROMO DEF"])
 
 st.sidebar.divider()
+
 if st.sidebar.button("🚪 Logout", use_container_width=True):
     st.session_state.auth_ok = False
     st.session_state.role = "aam"
     st.session_state.page = PAGES["HOME CLIENTE"]
+    st.session_state.admin_page = "admin_home"
     st.rerun()
 
 
 # =========================
-# HEADER
+# HEADER (diverso per ruolo)
 # =========================
-st.title(f"Promo Planner 2026 — {CLIENTE_DEFAULT}")
+if st.session_state.get("role") == "admin":
+    st.title("Promo Planner 2026 — ADMIN PAGE")
+else:
+    st.title(f"Promo Planner 2026 — {CLIENTE_DEFAULT}")
+
 page = st.session_state.page
 
 
 # =========================
-# PAGES
+# ADMIN PAGES (ambiente separato)
+# =========================
+if page == "admin":
+    if st.session_state.get("role") != "admin":
+        st.error("Accesso non autorizzato.")
+        st.stop()
+
+    st.subheader("Seleziona ambiente di lavoro")
+
+    a1, a2, a3 = st.columns(3)
+    with a1:
+        if st.button("⬆️ Upload Files", use_container_width=True):
+            goto_admin("admin_upload")
+    with a2:
+        if st.button("📚 Consultazione Piani Promo", use_container_width=True):
+            goto_admin("admin_piani")
+    with a3:
+        if st.button("🧾 WD Promo Review", use_container_width=True):
+            goto_admin("admin_wd")
+
+    st.divider()
+
+    admin_page = st.session_state.admin_page
+
+    if admin_page == "admin_home":
+        st.info("Seleziona un ambiente (Upload Files / Consultazione Piani Promo / WD Promo Review).")
+
+    elif admin_page == "admin_upload":
+        st.subheader("Upload Files")
+        st.caption("Qui carichiamo i file che alimentano le viste AAM. (Per ora: Piano Promo 2025)")
+
+        import pandas as pd
+
+        up = st.file_uploader("Carica Piano Promo 2025 (Excel o CSV)", type=["xlsx", "xls", "csv"])
+        if up is not None:
+            try:
+                if up.name.lower().endswith(".csv"):
+                    df = pd.read_csv(up)
+                else:
+                    df = pd.read_excel(up, sheet_name=0)
+            except Exception as e:
+                st.error(f"Errore lettura file: {e}")
+                st.stop()
+
+            df.columns = [str(c).strip() for c in df.columns]
+            st.session_state.piano2025_df = df
+            st.success(f"Piano Promo 2025 caricato ✅ Righe: {len(df):,} | Colonne: {len(df.columns)}")
+
+        if st.session_state.piano2025_df is not None:
+            with st.expander("Preview (prime 20 righe)"):
+                st.dataframe(st.session_state.piano2025_df.head(20), use_container_width=True, hide_index=True)
+
+        st.divider()
+        st.info("Prossimi file (placeholder): Lista Prodotti, WD Cliente, Mapping cluster, ecc.")
+
+    elif admin_page == "admin_piani":
+        st.subheader("Consultazione Piani Promo")
+        st.info("Placeholder: qui metteremo la consultazione piani per cliente/anno/versione.")
+
+    elif admin_page == "admin_wd":
+        st.subheader("WD Promo Review")
+        st.info("Placeholder: qui metteremo il controllo WD / coerenza promo / match con piani.")
+
+    st.stop()
+
+
+# =========================
+# AAM PAGES (come ora)
 # =========================
 if page == "home":
     st.subheader("Seleziona ambiente di lavoro")
@@ -186,44 +286,12 @@ if page == "home":
     st.stop()
 
 
-elif page == "admin":
-    if st.session_state.get("role") != "admin":
-        st.error("Accesso non autorizzato.")
-        st.stop()
-
-    st.subheader("🛠️ Admin — Upload file")
-    st.caption("Qui carichi i file che alimentano le viste AAM. (Per ora solo Piano Promo 2025)")
-
-    import pandas as pd
-
-    up = st.file_uploader("Carica Piano Promo 2025 (Excel o CSV)", type=["xlsx", "xls", "csv"])
-    if up is not None:
-        try:
-            if up.name.lower().endswith(".csv"):
-                df = pd.read_csv(up)
-            else:
-                df = pd.read_excel(up, sheet_name=0)
-        except Exception as e:
-            st.error(f"Errore lettura file: {e}")
-            st.stop()
-
-        df.columns = [str(c).strip() for c in df.columns]
-        st.session_state.piano2025_df = df
-        st.success(f"Piano Promo 2025 caricato ✅ Righe: {len(df):,} | Colonne: {len(df.columns)}")
-
-    if st.session_state.piano2025_df is not None:
-        with st.expander("Preview (prime 20 righe)"):
-            st.dataframe(st.session_state.piano2025_df.head(20), use_container_width=True, hide_index=True)
-
-
 elif page == "piano_2025":
-    import pandas as pd
-
     st.subheader("Piano Promo 2025 (Consultazione)")
 
     df = st.session_state.piano2025_df
     if df is None:
-        st.warning("Nessun Piano Promo 2025 caricato. Chiedi all’Admin di caricarlo nella pagina 🛠️ Admin.")
+        st.warning("Nessun Piano Promo 2025 caricato. Chiedi all’Admin di caricarlo nella pagina Admin > Upload Files.")
         st.stop()
 
     st.success(f"Dati disponibili ✅ Righe: {len(df):,} | Colonne: {len(df.columns)}")
@@ -231,7 +299,6 @@ elif page == "piano_2025":
     with st.expander("Vedi elenco colonne"):
         st.write([str(c) for c in df.columns])
 
-    # filtri base (auto-detect)
     df_f = df.copy()
     df_f.columns = [str(c).strip() for c in df_f.columns]
 
@@ -246,31 +313,31 @@ elif page == "piano_2025":
     clu_col = pick_col({"cluster", "canale", "channel"})
 
     st.markdown("### Filtri")
-    c1, c2, c3 = st.columns(3)
+    f1, f2, f3 = st.columns(3)
 
     if cat_col:
         cats = sorted(df_f[cat_col].dropna().astype(str).str.strip().unique().tolist())
-        sel = c1.multiselect("Categoria", cats, default=[])
+        sel = f1.multiselect("Categoria", cats, default=[])
         if sel:
             df_f = df_f[df_f[cat_col].astype(str).str.strip().isin(sel)]
     else:
-        c1.caption("Categoria: colonna non trovata (la mappiamo dopo)")
+        f1.caption("Categoria: colonna non trovata (la mappiamo dopo)")
 
     if act_col:
         acts = sorted(df_f[act_col].dropna().astype(str).str.strip().unique().tolist())
-        sel = c2.multiselect("Attività", acts, default=[])
+        sel = f2.multiselect("Attività", acts, default=[])
         if sel:
             df_f = df_f[df_f[act_col].astype(str).str.strip().isin(sel)]
     else:
-        c2.caption("Attività: colonna non trovata (la mappiamo dopo)")
+        f2.caption("Attività: colonna non trovata (la mappiamo dopo)")
 
     if clu_col:
         clus = sorted(df_f[clu_col].dropna().astype(str).str.strip().unique().tolist())
-        sel = c3.multiselect("Cluster/Canale", clus, default=[])
+        sel = f3.multiselect("Cluster/Canale", clus, default=[])
         if sel:
             df_f = df_f[df_f[clu_col].astype(str).str.strip().isin(sel)]
     else:
-        c3.caption("Cluster/Canale: colonna non trovata (la mappiamo dopo)")
+        f3.caption("Cluster/Canale: colonna non trovata (la mappiamo dopo)")
 
     st.markdown("### Tabella")
     st.dataframe(df_f, use_container_width=True, hide_index=True)

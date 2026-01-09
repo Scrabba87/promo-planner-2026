@@ -3,23 +3,58 @@ import streamlit as st
 from datetime import date, timedelta
 from collections import Counter
 
-# =========================
-# PAGE CONFIG
-# =========================
 st.set_page_config(page_title="Promo Planner 2026", layout="wide")
 
+# =========================
+# CONFIG
+# =========================
+CLIENTE_DEFAULT = "Esselunga"
+LOGO_PATH = "assets/royal.png"  # opzionale
+
+ATTIVITA_LIST = [
+    "TAGLIO PREZZO + EXTRA DISPLAY",
+    "COLLECTION",
+    "VOL + EXTRA DISPLAY",
+    "TAGLIO PREZZO",
+    "VOLANTINO",
+]
+CANALI = ["IPER", "SUPER", "SUPERETTE"]
+
+PRODOTTI_DEMO = {
+    "SOFT DRINKS": [
+        {"SAP COD": "SAP001", "CODICE SAP": "CSAP001", "FORMATO 1": "33cl"},
+        {"SAP COD": "SAP002", "CODICE SAP": "CSAP002", "FORMATO 1": "1L"},
+    ],
+    "BIRRA": [
+        {"SAP COD": "SAP101", "CODICE SAP": "CSAP101", "FORMATO 1": "66cl"},
+    ],
+    "ENERGY": [
+        {"SAP COD": "SAP201", "CODICE SAP": "CSAP201", "FORMATO 1": "25cl"},
+    ],
+}
+
+def month_by_max_days(d1: date, d2: date) -> int:
+    c = Counter()
+    cur = d1
+    while cur <= d2:
+        c[(cur.year, cur.month)] += 1
+        cur += timedelta(days=1)
+    best = max(
+        c.items(),
+        key=lambda kv: (kv[1], 1 if kv[0] == (d1.year, d1.month) else 0),
+    )[0]
+    return best[1]
+
 
 # =========================
-# AUTH (LOGIN GATE)
+# AUTH (AAM / ADMIN)
 # =========================
 def require_login():
-    # init session
     if "auth_ok" not in st.session_state:
         st.session_state.auth_ok = False
     if "role" not in st.session_state:
-        st.session_state.role = "aam"  # default
+        st.session_state.role = "aam"
 
-    # already logged in
     if st.session_state.auth_ok:
         return
 
@@ -34,7 +69,6 @@ def require_login():
             user == st.secrets.get("APP_USER", "")
             and hmac.compare_digest(pwd, st.secrets.get("APP_PASS", ""))
         )
-
         is_admin = (
             user == st.secrets.get("ADMIN_USER", "")
             and hmac.compare_digest(pwd, st.secrets.get("ADMIN_PASS", ""))
@@ -53,54 +87,7 @@ def require_login():
 
     st.stop()
 
-
 require_login()
-
-
-
-# =========================
-# CONFIG (hardcoded per ora)
-# =========================
-CLIENTE_DEFAULT = "Esselunga"
-
-LOGO_PATH = "assets/royal.png"  # assicurati che esista in repo
-
-ATTIVITA_LIST = [
-    "TAGLIO PREZZO + EXTRA DISPLAY",
-    "COLLECTION",
-    "VOL + EXTRA DISPLAY",
-    "TAGLIO PREZZO",
-    "VOLANTINO",
-]
-
-CANALI = ["IPER", "SUPER", "SUPERETTE"]
-
-# Prodotti demo (finché non carichiamo la lista vera)
-PRODOTTI_DEMO = {
-    "SOFT DRINKS": [
-        {"SAP COD": "SAP001", "CODICE SAP": "CSAP001", "FORMATO 1": "33cl"},
-        {"SAP COD": "SAP002", "CODICE SAP": "CSAP002", "FORMATO 1": "1L"},
-    ],
-    "BIRRA": [
-        {"SAP COD": "SAP101", "CODICE SAP": "CSAP101", "FORMATO 1": "66cl"},
-    ],
-    "ENERGY": [
-        {"SAP COD": "SAP201", "CODICE SAP": "CSAP201", "FORMATO 1": "25cl"},
-    ],
-}
-
-
-def month_by_max_days(d1: date, d2: date) -> int:
-    c = Counter()
-    cur = d1
-    while cur <= d2:
-        c[(cur.year, cur.month)] += 1
-        cur += timedelta(days=1)
-    best = max(
-        c.items(),
-        key=lambda kv: (kv[1], 1 if kv[0] == (d1.year, d1.month) else 0),
-    )[0]
-    return best[1]
 
 
 # =========================
@@ -112,69 +99,72 @@ PAGES = {
     "INSERIMENTO PROMO": "ins_promo",
     "CONSULTAZIONE PROMO IN BOZZA": "bozze",
     "CONSULTAZIONE PROMO DEF": "def",
+    "ADMIN": "admin",
 }
 
 if "page" not in st.session_state:
     st.session_state.page = PAGES["HOME CLIENTE"]
 
+# storage dati (per ora in session)
+if "piano2025_df" not in st.session_state:
+    st.session_state.piano2025_df = None
+
 
 # =========================
-# SIDEBAR (logo + nav + logout)
+# SIDEBAR
 # =========================
 try:
     st.sidebar.image(LOGO_PATH, use_container_width=True)
 except Exception:
-    st.sidebar.warning("Logo non trovato: controlla assets/royal.png")
+    pass
+
+st.sidebar.caption(f"Cliente: {CLIENTE_DEFAULT}")
 
 st.sidebar.divider()
-st.sidebar.caption(f"Cliente: {CLIENTE_DEFAULT} (per ora fisso)")
-
 st.sidebar.markdown("### Navigazione")
 
-if st.sidebar.button("🏠 Home Cliente", use_container_width=True):
-    st.session_state.page = PAGES["HOME CLIENTE"]
+def goto(page_key: str):
+    st.session_state.page = page_key
     st.rerun()
+
+if st.sidebar.button("🏠 Home Cliente", use_container_width=True):
+    goto(PAGES["HOME CLIENTE"])
 
 if st.sidebar.button("📅 Piano Promo 2025", use_container_width=True):
-    st.session_state.page = PAGES["PIANO PROMO 2025"]
-    st.rerun()
+    goto(PAGES["PIANO PROMO 2025"])
 
 if st.sidebar.button("✍️ Inserimento Promo", use_container_width=True):
-    st.session_state.page = PAGES["INSERIMENTO PROMO"]
-    st.rerun()
+    goto(PAGES["INSERIMENTO PROMO"])
 
 if st.sidebar.button("📝 Promo in Bozza", use_container_width=True):
-    st.session_state.page = PAGES["CONSULTAZIONE PROMO IN BOZZA"]
-    st.rerun()
+    goto(PAGES["CONSULTAZIONE PROMO IN BOZZA"])
 
 if st.sidebar.button("✅ Promo Definitive", use_container_width=True):
-    st.session_state.page = PAGES["CONSULTAZIONE PROMO DEF"]
-    st.rerun()
+    goto(PAGES["CONSULTAZIONE PROMO DEF"])
+
+# Admin button only for admin
+if st.session_state.get("role") == "admin":
+    st.sidebar.divider()
+    if st.sidebar.button("🛠️ Admin", use_container_width=True):
+        goto(PAGES["ADMIN"])
 
 st.sidebar.divider()
-
-if st.session_state.get("role") == "admin":
-    if st.sidebar.button("🛠️ Admin", use_container_width=True):
-        st.session_state.page = "admin"
-        st.rerun()
-
 if st.sidebar.button("🚪 Logout", use_container_width=True):
     st.session_state.auth_ok = False
     st.session_state.role = "aam"
+    st.session_state.page = PAGES["HOME CLIENTE"]
     st.rerun()
-
 
 
 # =========================
 # HEADER
 # =========================
 st.title(f"Promo Planner 2026 — {CLIENTE_DEFAULT}")
-
 page = st.session_state.page
 
 
 # =========================
-# HOME CLIENTE
+# PAGES
 # =========================
 if page == "home":
     st.subheader("Seleziona ambiente di lavoro")
@@ -182,38 +172,126 @@ if page == "home":
     c1, c2 = st.columns(2)
     with c1:
         if st.button("1) Piano Promo 2025", use_container_width=True):
-            st.session_state.page = PAGES["PIANO PROMO 2025"]
-            st.rerun()
+            goto(PAGES["PIANO PROMO 2025"])
         if st.button("3) Consultazione promo in bozza", use_container_width=True):
-            st.session_state.page = PAGES["CONSULTAZIONE PROMO IN BOZZA"]
-            st.rerun()
+            goto(PAGES["CONSULTAZIONE PROMO IN BOZZA"])
 
     with c2:
         if st.button("2) Inserimento promo", type="primary", use_container_width=True):
-            st.session_state.page = PAGES["INSERIMENTO PROMO"]
-            st.rerun()
+            goto(PAGES["INSERIMENTO PROMO"])
         if st.button("4) Consultazione promo definitive", use_container_width=True):
-            st.session_state.page = PAGES["CONSULTAZIONE PROMO DEF"]
-            st.rerun()
+            goto(PAGES["CONSULTAZIONE PROMO DEF"])
 
     st.info("Login AAM e scelta cliente verranno aggiunti successivamente.")
     st.stop()
 
 
-# =========================
-# PAGES
-# =========================
-if page == "piano_2025":
-    st.subheader("Piano Promo 2025")
-    st.info("Placeholder: qui mostreremo la Last Year View (per categoria e quando).")
+elif page == "admin":
+    if st.session_state.get("role") != "admin":
+        st.error("Accesso non autorizzato.")
+        st.stop()
+
+    st.subheader("🛠️ Admin — Upload file")
+    st.caption("Qui carichi i file che alimentano le viste AAM. (Per ora solo Piano Promo 2025)")
+
+    import pandas as pd
+
+    up = st.file_uploader("Carica Piano Promo 2025 (Excel o CSV)", type=["xlsx", "xls", "csv"])
+    if up is not None:
+        try:
+            if up.name.lower().endswith(".csv"):
+                df = pd.read_csv(up)
+            else:
+                df = pd.read_excel(up, sheet_name=0)
+        except Exception as e:
+            st.error(f"Errore lettura file: {e}")
+            st.stop()
+
+        df.columns = [str(c).strip() for c in df.columns]
+        st.session_state.piano2025_df = df
+        st.success(f"Piano Promo 2025 caricato ✅ Righe: {len(df):,} | Colonne: {len(df.columns)}")
+
+    if st.session_state.piano2025_df is not None:
+        with st.expander("Preview (prime 20 righe)"):
+            st.dataframe(st.session_state.piano2025_df.head(20), use_container_width=True, hide_index=True)
+
+
+elif page == "piano_2025":
+    import pandas as pd
+
+    st.subheader("Piano Promo 2025 (Consultazione)")
+
+    df = st.session_state.piano2025_df
+    if df is None:
+        st.warning("Nessun Piano Promo 2025 caricato. Chiedi all’Admin di caricarlo nella pagina 🛠️ Admin.")
+        st.stop()
+
+    st.success(f"Dati disponibili ✅ Righe: {len(df):,} | Colonne: {len(df.columns)}")
+
+    with st.expander("Vedi elenco colonne"):
+        st.write([str(c) for c in df.columns])
+
+    # filtri base (auto-detect)
+    df_f = df.copy()
+    df_f.columns = [str(c).strip() for c in df_f.columns]
+
+    def pick_col(options):
+        for c in df_f.columns:
+            if c.lower() in options:
+                return c
+        return None
+
+    cat_col = pick_col({"categoria", "category"})
+    act_col = pick_col({"attivita", "attività", "attivita'", "activity"})
+    clu_col = pick_col({"cluster", "canale", "channel"})
+
+    st.markdown("### Filtri")
+    c1, c2, c3 = st.columns(3)
+
+    if cat_col:
+        cats = sorted(df_f[cat_col].dropna().astype(str).str.strip().unique().tolist())
+        sel = c1.multiselect("Categoria", cats, default=[])
+        if sel:
+            df_f = df_f[df_f[cat_col].astype(str).str.strip().isin(sel)]
+    else:
+        c1.caption("Categoria: colonna non trovata (la mappiamo dopo)")
+
+    if act_col:
+        acts = sorted(df_f[act_col].dropna().astype(str).str.strip().unique().tolist())
+        sel = c2.multiselect("Attività", acts, default=[])
+        if sel:
+            df_f = df_f[df_f[act_col].astype(str).str.strip().isin(sel)]
+    else:
+        c2.caption("Attività: colonna non trovata (la mappiamo dopo)")
+
+    if clu_col:
+        clus = sorted(df_f[clu_col].dropna().astype(str).str.strip().unique().tolist())
+        sel = c3.multiselect("Cluster/Canale", clus, default=[])
+        if sel:
+            df_f = df_f[df_f[clu_col].astype(str).str.strip().isin(sel)]
+    else:
+        c3.caption("Cluster/Canale: colonna non trovata (la mappiamo dopo)")
+
+    st.markdown("### Tabella")
+    st.dataframe(df_f, use_container_width=True, hide_index=True)
+
+    st.download_button(
+        "Scarica vista filtrata (CSV)",
+        data=df_f.to_csv(index=False).encode("utf-8"),
+        file_name="piano_promo_2025_filtrato.csv",
+        mime="text/csv",
+    )
+
 
 elif page == "bozze":
     st.subheader("Consultazione Promo in bozza")
-    st.info("Placeholder: qui vedremo le promo salvate in bozza (da DB).")
+    st.info("Placeholder: qui vedremo le promo salvate in bozza.")
+
 
 elif page == "def":
     st.subheader("Consultazione Promo definitive")
-    st.info("Placeholder: qui vedremo le promo definitive / approvate (da DB).")
+    st.info("Placeholder: qui vedremo le promo definitive / approvate.")
+
 
 elif page == "ins_promo":
     st.subheader("Inserimento Promo")
@@ -283,8 +361,3 @@ elif page == "ins_promo":
                 st.stop()
 
     st.success("Inserimento promo OK ✅ (prossimo step: salvataggio + export Excel)")
-
-
-
-
-
